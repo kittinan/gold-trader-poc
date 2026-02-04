@@ -1,98 +1,35 @@
 # Progress Log - Khun Than (Developer)
 
-## Milestone 4: Mock Deposit System (Backend) ✅ COMPLETED
+## Dockerization & Build Test ✅ SUCCESSFUL
 **Date:** 2026-02-04
-**Status:** ✅ Completed
+**Status:** ✅ Passed
+
+### Summary:
+Successfully containerized the Gold Trader project and verified the build/run process using Docker Compose.
 
 ### Tasks Completed:
 
-1. **Create Deposit Model** ✅
-   - Location: `backend/core/models.py`
-   - Fields:
-     - `user`: ForeignKey to User model
-     - `amount`: DecimalField (max_digits=12, decimal_places=2)
-     - `status`: CharField with choices (PENDING, COMPLETED, FAILED)
-     - `reference`: CharField (unique, max_length=50)
-     - `created_at`, `updated_at`: Auto timestamps
-   - Added `complete_deposit()` method to auto-update user balance
+1. **Bug Fixes (Backend)** ✅
+   - Resolved `ImportError` in `views.py` by removing non-existent `MockPaymentSerializer`.
+   - Corrected `DepositUpdateSerializer` fields to match current requirements.
+   - Synchronized `serializers.py` with `views.py` imports.
 
-2. **Create Deposit Serializers** ✅
-   - Location: `backend/core/serializers.py`
-   - Serializers created:
-     - `DepositSerializer`: For displaying deposit data
-     - `DepositCreateSerializer`: For creating new deposits
-     - `MockPaymentSerializer`: For mock payment confirmation
-     - `DepositCompleteSerializer`: For completing deposits
+2. **Infrastructure Adjustments** ✅
+   - Updated `docker-compose.dev.yml` to use port **8001** for the backend to avoid conflicts with existing services (Portainer) on port 8000.
+   - Verified PostgreSQL (port 5433) and Redis (port 6380) port mappings.
 
-3. **Implement Deposit API Views** ✅
-   - Location: `backend/core/views.py`
-   - Views created:
-     - `DepositListView`: List user's deposits (GET /api/wallet/deposits/)
-     - `DepositCreateView`: Create new deposit (POST /api/wallet/deposit/create/)
-     - `DepositCompleteView`: Complete deposit (POST /api/wallet/deposit/complete/)
-     - `DepositDetailView`: Get specific deposit (GET /api/wallet/deposits/:id/)
-     - `WalletBalanceView`: Get user's balance (GET /api/wallet/balance/)
+3. **Build & Run Test** ✅
+   - Build Status: **PASSED** (Frontend & Backend images created successfully).
+   - Run Status: **PASSED** (All 4 containers: `db`, `redis`, `backend`, `frontend` are UP).
+   - Migration Status: **PASSED** (Database migrations applied automatically on startup).
+   - Web Server: **ACTIVE** (Django dev server running at http://0.0.0.0:8000 inside container, mapped to 8001).
 
-4. **Add URL Routes** ✅
-   - Location: `backend/core/urls.py`
-   - Routes added:
-     - `/api/wallet/deposits/` - List deposits
-     - `/api/wallet/deposits/<int:pk>/` - Get deposit detail
-     - `/api/wallet/deposit/create/` - Create new deposit
-     - `/api/wallet/deposit/complete/` - Complete deposit
-     - `/api/wallet/balance/` - Get balance
+4. **Git & GitHub** ✅
+   - All Docker configuration and fixes have been pushed to the repository.
 
-5. **Create Migration** ✅
-   - Location: `backend/core/migrations/0003_deposit.py`
-   - Migration created successfully
-   - Django check passed with no issues
+### Connectivity Verified:
+- Frontend <-> Backend API: ✅
+- Backend <-> PostgreSQL: ✅
+- Backend <-> Redis: ✅
 
-6. **Git Commit & Push** ✅
-   - Committed all backend changes
-   - Pushed to GitHub (origin/main)
-   - Commit hash: 40a3dbd
-
-### API Endpoints Created:
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/wallet/deposits/` | GET | List user's deposits |
-| `/api/wallet/deposits/<id>/` | GET | Get specific deposit |
-| `/api/wallet/deposit/create/` | POST | Create new deposit |
-| `/api/wallet/deposit/complete/` | POST | Complete deposit with reference |
-| `/api/wallet/balance/` | GET | Get current balance |
-
-### Features Implemented:
-
-- ✅ Mock payment gateway simulation
-- ✅ Unique reference code generation for each deposit
-- ✅ Auto-update user balance when deposit completes
-- ✅ Validation for deposit amounts (0 < amount ≤ 1,000,000 THB)
-- ✅ Reference code verification before completion
-- ✅ Deposit status tracking (PENDING → COMPLETED)
-- ✅ User-specific deposit history
-
-### Technical Notes:
-
-- Deposit model follows requirements: user, amount, status, reference
-- User balance is automatically updated via `complete_deposit()` method
-- Reference codes are generated using UUID for uniqueness
-- Maximum deposit limit: 1,000,000 THB (for mock system)
-- All endpoints require authentication (IsAuthenticated)
-
-### Next Steps:
-
-- Frontend integration with deposit endpoints
-- Create deposit page UI
-- Implement frontend deposit flow
-- Test complete deposit workflow
-
----
-
-## Milestone Log
-
-- Milestone 1: ✅ Completed (User Authentication)
-- Milestone 2: ✅ Completed (Gold Trading)
-- Milestone 3: ✅ Completed (Price History)
-- Milestone 4: ✅ Completed (Mock Deposit System)
-- Milestone 5: ⏳ Pending (Frontend Integration)
+**Project is now Docker-ready and can be deployed with a single command.** 🐳🚀
