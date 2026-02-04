@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWebSocket } from '../services/websocket';
 import { goldPriceService } from '../services/api';
-import { GoldPrice, Transaction } from '../types';
-import { formatCurrency, formatNumber } from '../utils/formatters';
+import { Transaction } from '../types';
+import { formatNumber } from '../utils/formatters';
 
 interface TradingInterfaceProps {
   className?: string;
@@ -33,7 +33,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const { connect, disconnect, subscribe, placeOrder, isConnected } = useWebSocket();
+  const { connect, disconnect, subscribeToEvent, subscribeToChannel, placeOrder, isConnected } = useWebSocket();
 
   // Fetch initial price data
   useEffect(() => {
@@ -64,8 +64,8 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
     const setupWebSocket = async () => {
       try {
         await connect();
-        subscribe('price_update');
-        subscribe('trade_update');
+        subscribeToChannel('price_update');
+        subscribeToChannel('trade_update');
       } catch (err) {
         console.error('WebSocket connection failed:', err);
       }

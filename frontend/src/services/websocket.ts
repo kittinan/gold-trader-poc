@@ -174,10 +174,10 @@ export const useWebSocket = () => {
   };
 
   return {
-    subscribe,
+    subscribeToEvent: subscribe,
     connect: () => wsService.connect(),
     disconnect: () => wsService.disconnect(),
-    subscribe: (channel: string) => wsService.subscribe(channel),
+    subscribeToChannel: (channel: string) => wsService.subscribe(channel),
     unsubscribe: (channel: string) => wsService.unsubscribe(channel),
     placeOrder: (orderData: any) => wsService.placeOrder(orderData),
     isConnected: () => wsService.isConnected(),

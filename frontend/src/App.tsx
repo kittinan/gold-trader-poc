@@ -3,7 +3,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Profile } from './pages/Profile';
 import { Dashboard } from './pages/Dashboard';
-import { Deposit } from './pages/Deposit';
+import Deposit from './pages/Deposit';
 import Trading from './pages/Trading';
 
 function App() {

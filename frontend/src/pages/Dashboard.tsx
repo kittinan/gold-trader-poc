@@ -84,6 +84,18 @@ export const Dashboard = () => {
                 <GoldHoldingsCard />
               </div>
 
+              {/* Trading Interface */}
+              <div id="trading" className="mb-8">
+                <TradingInterface 
+                  onTradeComplete={() => setRefreshTradeHistory(prev => prev + 1)}
+                />
+              </div>
+
+              {/* Trade History */}
+              <div id="history" className="mb-8">
+                <TradeHistory refreshTrigger={refreshTradeHistory} />
+              </div>
+
               {/* Quick Actions */}
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>

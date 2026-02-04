@@ -21,7 +21,7 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({
   const [filter, setFilter] = useState<'all' | 'buy' | 'sell'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
 
-  const { subscribe } = useWebSocket();
+  const { subscribeToEvent } = useWebSocket();
 
   // Fetch transactions
   const fetchTransactions = useCallback(async () => {

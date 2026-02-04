@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: gold-trader-postgres-dev
+    environment:
+      POSTGRES_DB: gold_trader
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/create_sample_data.py:/docker-entrypoint-initdb.d/create_sample_data.py
+    ports:
+      - "5433:5432"
+    networks:
+      - gold-trader-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: gold-trader-redis-dev
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6380:6379"
+    networks:
+      - gold-trader-network
+
+  # Django Backend (Development)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: gold-trader-backend-dev
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-dev-secret-key-change-in-production
+      - DB_NAME=gold_trader
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+    volumes:
+      - ./backend:/app
+      - backend_media:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - gold-trader-network
+    command: >
+      sh -c "
+        python manage.py migrate &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+
+  # React Frontend (Development)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      network: host
+    container_name: gold-trader-frontend-dev
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - gold-trader-network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_media:
+    driver: local
+
+networks:
+  gold-trader-network:
+    driver: bridge
