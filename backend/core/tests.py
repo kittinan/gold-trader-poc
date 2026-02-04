@@ -1,3 +1,3 @@
-from django.test import TestCase
-
-# Create your tests here.
+"""
+This file is deprecated. All tests are now in the tests/ directory.
+"""

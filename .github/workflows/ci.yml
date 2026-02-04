@@ -10,6 +10,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v4
 
@@ -26,8 +36,10 @@ jobs:
 
       - name: Run tests
         working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         run: |
-          pytest -v --cov=. --cov-report=xml
+          pytest -v --cov=. --cov-report=xml --create-db
 
   lint:
     runs-on: ubuntu-latest

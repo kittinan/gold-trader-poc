@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
-import { GoldHolding, Transaction, GoldPrice } from '../types';
+import type { GoldHolding, Transaction, GoldPrice } from '../types';
 
 const Trading: React.FC = () => {
   const { user } = useAuth();
@@ -61,7 +61,7 @@ const Trading: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6 text-gold-600">Trading Center</h1>
+      <h1 className="text-3xl font-bold mb-6 text-yellow-600">Trading Center</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Price & Trade Form */}
@@ -87,7 +87,7 @@ const Trading: React.FC = () => {
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(parseFloat(e.target.value))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-gold-500 focus:border-gold-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
                 placeholder="0.000"
                 step="0.001"
               />
@@ -121,12 +121,12 @@ const Trading: React.FC = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
               <span className="text-gray-600">Available Balance</span>
-              <span className="font-bold text-gray-800">{user?.balance.toLocaleString()} THB</span>
+              <span className="font-bold text-gray-800">{(user?.balance || 0).toLocaleString()} THB</span>
             </div>
             {holdings.map((h) => (
-              <div key={h.id} className="flex justify-between items-center p-3 bg-gold-50 rounded-lg border border-gold-100">
-                <span className="text-gold-800">Gold Holding</span>
-                <span className="font-bold text-gold-900">{h.amount} Grams</span>
+              <div key={h.id} className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                <span className="text-yellow-800">Gold Holding</span>
+                <span className="font-bold text-yellow-900">{h.amount} Grams</span>
               </div>
             ))}
           </div>

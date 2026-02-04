@@ -6,6 +6,7 @@ export interface User {
   phone_number?: string;
   date_of_birth?: string;
   is_verified: boolean;
+  balance: number;
   created_at: string;
   updated_at: string;
 }
@@ -67,6 +68,19 @@ export interface Wallet {
 }
 
 // Gold Holdings Types
+export interface GoldHolding {
+  id: number;
+  user: number;
+  amount: number;
+  avg_price: number;
+  total_value: number;
+  current_value: number;
+  profit_loss: number;
+  profit_loss_percent: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface GoldHoldingsData {
   current_holdings: {
     gold_weight_grams: number;

@@ -4,7 +4,7 @@ interface WebSocketMessage {
   timestamp: string;
 }
 
-interface PriceUpdateData {
+export interface PriceUpdateData {
   price_per_gram: number;
   price_per_baht: number;
   currency: string;
@@ -14,7 +14,7 @@ interface PriceUpdateData {
   volume_24h?: number;
 }
 
-interface TradeUpdateData {
+export interface TradeUpdateData {
   transaction_id: number;
   user_id: number;
   transaction_type: 'BUY' | 'SELL';
