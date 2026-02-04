@@ -7,7 +7,7 @@ from django.db.models import Sum, F
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .models import User, GoldHolding, PriceHistory
+from .models import User, GoldHolding, PriceHistory, Deposit
 from .serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -18,6 +18,10 @@ from .serializers import (
     GoldHoldingCreateSerializer,
     PriceHistorySerializer,
     PriceHistoryCreateSerializer,
+    DepositSerializer,
+    DepositCreateSerializer,
+    MockPaymentSerializer,
+    DepositCompleteSerializer,
 )
 
 
@@ -409,4 +413,272 @@ class GoldHoldingsView(APIView):
         except Exception as e:
             return Response({
                 'error': f'Failed to fetch gold holdings: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ==================== Deposit Views ====================
+
+class DepositListView(generics.ListAPIView):
+    """
+    API endpoint to list user's deposit history.
+    GET /api/wallet/deposits/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DepositSerializer
+
+    def get_queryset(self):
+        return Deposit.objects.filter(user=self.request.user)
+
+
+class DepositCreateView(APIView):
+    """
+    API endpoint to create a new deposit (mock payment request).
+    POST /api/wallet/deposit/create/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """
+        Create a new deposit request with a mock reference code.
+        """
+        serializer = DepositCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            amount = serializer.validated_data['amount']
+
+            # Generate mock reference code
+            import uuid
+            reference = f"MOCK-{uuid.uuid4().hex[:12].upper()}"
+
+            # Create deposit record
+            deposit = Deposit.objects.create(
+                user=request.user,
+                amount=amount,
+                status='PENDING',
+                reference=reference
+            )
+
+            # Return deposit details with mock payment instructions
+            response_data = {
+                'message': 'Deposit request created successfully',
+                'deposit': DepositSerializer(deposit).data,
+                'payment_instructions': {
+                    'method': 'Mock Payment Gateway',
+                    'amount': float(amount),
+                    'reference_code': reference,
+                    'note': 'This is a mock payment for testing purposes.',
+                    'action_required': 'Use the complete-deposit endpoint with the reference code to confirm payment.'
+                },
+                'next_steps': {
+                    'endpoint': '/api/wallet/deposit/complete/',
+                    'method': 'POST',
+                    'payload': {
+                        'deposit_id': deposit.id,
+                        'reference': reference
+                    }
+                }
+            }
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DepositCompleteView(APIView):
+    """
+    API endpoint to complete a deposit (simulating payment gateway callback).
+    POST /api/wallet/deposit/complete/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """
+        Complete a deposit by confirming payment with reference code.
+        """
+        serializer = DepositCompleteSerializer(data=request.data)
+        if serializer.is_valid():
+            deposit_id = serializer.validated_data['deposit_id']
+            reference = serializer.validated_data['reference']
+
+            # Get deposit and verify it belongs to user
+            try:
+                deposit = Deposit.objects.get(id=deposit_id, user=request.user)
+            except Deposit.DoesNotExist:
+                return Response({
+                    'error': 'Deposit not found or does not belong to you.'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            # Verify reference code matches
+            if deposit.reference != reference:
+                return Response({
+                    'error': 'Invalid reference code.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if deposit is already completed
+            if deposit.status == 'COMPLETED':
+                return Response({
+                    'message': 'Deposit already completed.',
+                    'deposit': DepositSerializer(deposit).data
+                }, status=status.HTTP_200_OK)
+
+            # Complete the deposit
+            if deposit.complete_deposit():
+                response_data = {
+                    'message': 'Deposit completed successfully.',
+                    'deposit': DepositSerializer(deposit).data,
+                    'new_balance': float(request.user.balance)
+                }
+                return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': 'Failed to complete deposit.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DepositDetailView(generics.RetrieveAPIView):
+    """
+    API endpoint to retrieve a specific deposit.
+    GET /api/wallet/deposits/:id/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DepositSerializer
+
+    def get_queryset(self):
+        return Deposit.objects.filter(user=self.request.user)
+
+
+class WalletBalanceView(APIView):
+    """
+    API endpoint to get user's wallet balance.
+    GET /api/wallet/balance/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        Get user's current wallet balance.
+        """
+        response_data = {
+            'user_id': request.user.id,
+            'email': request.user.email,
+            'balance': float(request.user.balance),
+            'updated_at': request.user.updated_at
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+# ==================== Deposit Views ====================
+
+from .models import Deposit
+from .serializers import DepositSerializer, DepositCreateSerializer, DepositUpdateSerializer
+from django.db import transaction
+
+
+class DepositListView(generics.ListCreateAPIView):
+    """
+    API endpoint to list and create deposit transactions.
+    GET /api/deposits/ - List user's deposit history
+    POST /api/deposits/ - Create new deposit transaction
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return DepositCreateSerializer
+        return DepositSerializer
+
+    def get_queryset(self):
+        return Deposit.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # Create the deposit with the current user
+        deposit = serializer.save()
+        
+        # For mock deposits, simulate immediate completion
+        # In a real system, this would be async and handled by a payment processor
+        try:
+            deposit.complete_deposit()
+        except Exception as e:
+            # Log the error but don't fail the request
+            # In production, you might want to handle this differently
+            pass
+
+
+class DepositDetailView(generics.RetrieveAPIView):
+    """
+    API endpoint to retrieve a specific deposit transaction.
+    GET /api/deposits/:id/ - Get specific deposit details
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DepositSerializer
+
+    def get_queryset(self):
+        return Deposit.objects.filter(user=self.request.user)
+
+
+class MockDepositProcessView(APIView):
+    """
+    API endpoint for processing mock deposits.
+    This simulates a deposit being processed and completed.
+    POST /api/deposits/mock-process/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """
+        Process a mock deposit with immediate completion.
+        """
+        try:
+            amount = request.data.get('amount')
+            payment_method = request.data.get('payment_method', 'BANK_TRANSFER')
+            notes = request.data.get('notes', '')
+
+            if not amount:
+                return Response({
+                    'error': 'Amount is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                amount = float(amount)
+                if amount <= 0:
+                    return Response({
+                        'error': 'Amount must be greater than zero'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                if amount > 1000000:
+                    return Response({
+                        'error': 'Amount cannot exceed 1,000,000 THB for mock deposits'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            except (ValueError, TypeError):
+                return Response({
+                    'error': 'Invalid amount format'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create and complete the deposit in a transaction
+            with transaction.atomic():
+                import uuid
+                deposit = Deposit.objects.create(
+                    user=request.user,
+                    amount=amount,
+                    payment_method=payment_method,
+                    status='PENDING',
+                    transaction_reference=f"MOCK-{uuid.uuid4().hex[:12].upper()}",
+                    notes=notes
+                )
+                
+                # Complete the deposit (updates user balance)
+                deposit.complete_deposit()
+
+            # Return the completed deposit details
+            serializer = DepositSerializer(deposit)
+            return Response({
+                'message': 'Mock deposit processed successfully',
+                'deposit': serializer.data,
+                'new_balance': float(request.user.balance)
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({
+                'error': f'Failed to process mock deposit: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

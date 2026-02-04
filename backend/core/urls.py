@@ -10,10 +10,17 @@ from .views import (
     GoldHoldingsListView,
     GoldHoldingDetailView,
     GoldHoldingsSummaryView,
+    GoldHoldingsView,
     # Price history views
     PriceHistoryListView,
     PriceHistoryDetailView,
     CurrentGoldPriceView,
+    # Deposit views
+    DepositListView,
+    DepositCreateView,
+    DepositCompleteView,
+    DepositDetailView,
+    WalletBalanceView,
 )
 
 app_name = 'core'
@@ -36,4 +43,11 @@ urlpatterns = [
     path('gold/prices/', PriceHistoryListView.as_view(), name='price_history_list'),
     path('gold/prices/<int:pk>/', PriceHistoryDetailView.as_view(), name='price_history_detail'),
     path('gold/prices/current/', CurrentGoldPriceView.as_view(), name='current_price'),
+
+    # ==================== Deposit endpoints ====================
+    path('wallet/deposits/', DepositListView.as_view(), name='deposit_list'),
+    path('wallet/deposits/<int:pk>/', DepositDetailView.as_view(), name='deposit_detail'),
+    path('wallet/deposit/create/', DepositCreateView.as_view(), name='deposit_create'),
+    path('wallet/deposit/complete/', DepositCompleteView.as_view(), name='deposit_complete'),
+    path('wallet/balance/', WalletBalanceView.as_view(), name='wallet_balance'),
 ]

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from .models import User, Transaction, GoldHolding, PriceHistory
+from .models import User, Transaction, GoldHolding, PriceHistory, Deposit
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -172,4 +172,148 @@ class PriceHistoryCreateSerializer(serializers.ModelSerializer):
     def validate_price_per_baht(self, value):
         if value <= 0:
             raise serializers.ValidationError("Price per baht must be greater than zero.")
+        return value
+
+
+# ==================== Deposit Serializers ====================
+
+class DepositSerializer(serializers.ModelSerializer):
+    """
+    Serializer for deposit transactions.
+    """
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    payment_method_display = serializers.CharField(source='get_payment_method_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = Deposit
+        fields = ('id', 'user', 'user_email', 'amount', 'payment_method', 
+                  'payment_method_display', 'status', 'status_display',
+                  'transaction_reference', 'notes', 'created_at', 'updated_at', 
+                  'completed_at')
+        read_only_fields = ('id', 'user', 'user_email', 'status_display', 
+                           'payment_method_display', 'created_at', 'updated_at', 
+                           'completed_at')
+
+
+class DepositCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating new deposit transactions (mock deposits).
+    """
+    class Meta:
+        model = Deposit
+        fields = ('amount', 'payment_method', 'notes')
+
+    def validate_amount(self, value):
+        """
+        Validate that deposit amount is positive and within reasonable limits.
+        """
+        if value <= 0:
+            raise serializers.ValidationError("Deposit amount must be greater than zero.")
+        if value > 1000000:  # 1 million THB limit for mock deposits
+            raise serializers.ValidationError("Deposit amount cannot exceed 1,000,000 THB for mock deposits.")
+        return value
+
+    def create(self, validated_data):
+        """
+        Create a new deposit transaction for the authenticated user.
+        """
+        # Set the user to the current authenticated user
+        validated_data['user'] = self.context['request'].user
+        
+        # Generate a mock transaction reference
+        import uuid
+        validated_data['transaction_reference'] = f"MOCK-{uuid.uuid4().hex[:12].upper()}"
+        
+        # Create the deposit
+        deposit = Deposit.objects.create(**validated_data)
+        
+        # For mock deposits, auto-complete after a short delay
+        # In a real system, this would be handled by a payment processor
+        return deposit
+
+
+class DepositUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating deposit status (admin use).
+    """
+    class Meta:
+        model = Deposit
+        fields = ('status', 'notes')
+
+    def validate_status(self, value):
+        """
+        Validate status transition.
+        """
+        deposit = self.instance
+        if deposit.status == 'COMPLETED' and value != 'COMPLETED':
+            raise serializers.ValidationError("Cannot change status from COMPLETED.")
+        return value
+
+
+# ==================== Deposit Serializers ====================
+
+class DepositSerializer(serializers.ModelSerializer):
+    """
+    Serializer for deposit display.
+    """
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+
+    class Meta:
+        model = Deposit
+        fields = ('id', 'user', 'user_email', 'amount', 'status',
+                  'reference', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'user', 'user_email', 'status',
+                           'reference', 'created_at', 'updated_at')
+
+
+class DepositCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating a new deposit (mock payment).
+    """
+    class Meta:
+        model = Deposit
+        fields = ('amount',)
+
+    def validate_amount(self, value):
+        """
+        Validate deposit amount.
+        """
+        if value <= 0:
+            raise serializers.ValidationError("Deposit amount must be greater than zero.")
+        if value > 1000000:
+            raise serializers.ValidationError("Deposit amount cannot exceed 1,000,000 THB for mock deposits.")
+        return value
+
+
+class MockPaymentSerializer(serializers.Serializer):
+    """
+    Serializer for mock payment confirmation.
+    """
+    deposit_id = serializers.IntegerField()
+    success = serializers.BooleanField()
+    reference = serializers.CharField(read_only=True)
+
+
+class DepositCompleteSerializer(serializers.Serializer):
+    """
+    Serializer for completing a deposit (simulating payment gateway callback).
+    """
+    deposit_id = serializers.IntegerField()
+    reference = serializers.CharField()
+
+    def validate_deposit_id(self, value):
+        """
+        Validate that deposit exists and belongs to the user.
+        """
+        if not Deposit.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Deposit not found.")
+        return value
+
+    def validate_reference(self, value):
+        """
+        Validate reference code.
+        """
+        if not value or len(value) < 5:
+            raise serializers.ValidationError("Invalid reference code.")
         return value

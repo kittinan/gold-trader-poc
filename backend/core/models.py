@@ -148,3 +148,47 @@ class PriceHistory(models.Model):
 
     def __str__(self):
         return f"{self.price_per_baht} THB/baht at {self.timestamp}"
+
+
+class Deposit(models.Model):
+    """
+    Model for mock deposit transactions.
+    This simulates a payment gateway for testing purposes.
+    """
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('COMPLETED', 'Completed'),
+        ('FAILED', 'Failed'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='deposits')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    reference = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'deposits'
+        verbose_name = 'Deposit'
+        verbose_name_plural = 'Deposits'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.amount} THB - {self.status}"
+
+    def complete_deposit(self):
+        """
+        Complete the deposit and update user's balance.
+        """
+        if self.status == 'COMPLETED':
+            return False
+
+        self.status = 'COMPLETED'
+        self.save()
+
+        # Update user balance
+        self.user.balance += self.amount
+        self.user.save()
+
+        return True
