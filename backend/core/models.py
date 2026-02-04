@@ -99,3 +99,52 @@ class Wallet(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.balance} THB, {self.gold_holdings}g gold"
+
+
+class GoldHolding(models.Model):
+    """
+    Model to track user's gold holdings with average purchase price.
+    This maintains a record of gold owned by each user with their average buy price.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='gold_holdings')
+    amount = models.DecimalField(max_digits=10, decimal_places=3)  # Gold amount in grams
+    avg_price = models.DecimalField(max_digits=10, decimal_places=2)  # Average buy price per gram in THB
+    total_value = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # Total value (amount * avg_price)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'gold_holdings'
+        verbose_name = 'Gold Holding'
+        verbose_name_plural = 'Gold Holdings'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.amount}g @ {self.avg_price} THB/g"
+
+    def save(self, *args, **kwargs):
+        # Auto-calculate total value
+        self.total_value = self.amount * self.avg_price
+        super().save(*args, **kwargs)
+
+
+class PriceHistory(models.Model):
+    """
+    Model to record historical gold price changes.
+    This model maintains a comprehensive history of gold price updates.
+    """
+    price_per_gram = models.DecimalField(max_digits=10, decimal_places=2)
+    price_per_baht = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='THB')
+    timestamp = models.DateTimeField(default=timezone.now)
+    source = models.CharField(max_length=100, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'price_history'
+        verbose_name = 'Price History'
+        verbose_name_plural = 'Price History'
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.price_per_baht} THB/baht at {self.timestamp}"

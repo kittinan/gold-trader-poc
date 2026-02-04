@@ -155,3 +155,10 @@ export const walletService = {
     return response.data;
   },
 };
+
+export const goldHoldingsService = {
+  getHoldings: async () => {
+    const response = await apiClient.get('/gold-holdings/');
+    return response.data;
+  },
+};

@@ -66,6 +66,33 @@ export interface Wallet {
   updated_at: string;
 }
 
+// Gold Holdings Types
+export interface GoldHoldingsData {
+  current_holdings: {
+    gold_weight_grams: number;
+    gold_weight_baht: number;
+    average_purchase_price_per_gram: number;
+    average_purchase_price_per_baht: number;
+  };
+  market_value: {
+    current_price_per_gram: number;
+    current_price_per_baht: number;
+    current_market_value_thb: number;
+    total_cost_thb: number;
+  };
+  profit_loss: {
+    unrealized_pl_thb: number;
+    unrealized_pl_percent: number;
+    realized_pl_thb: number;
+    total_pl_thb: number;
+  };
+  transactions: {
+    total_buy_transactions: number;
+    total_sell_transactions: number;
+    recent_transactions: Transaction[];
+  };
+}
+
 // API Response Types
 export interface PaginatedResponse<T> {
   count: number;
