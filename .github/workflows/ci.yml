@@ -20,14 +20,15 @@ jobs:
         cd backend
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-django
     - name: Run Tests
       run: |
         cd backend
         pytest
       env:
-        SECRET_KEY: 'test-secret-key'
+        SECRET_KEY: 'test-secret-key-for-ci'
         DEBUG: 'True'
+        DB_ENGINE: 'django.db.backends.sqlite3'
+        DB_NAME: ':memory:'
 
   frontend-build:
     runs-on: ubuntu-latest
@@ -40,8 +41,10 @@ jobs:
     - name: Install dependencies
       run: |
         cd frontend
-        npm install
+        npm ci
     - name: Build
       run: |
         cd frontend
         npm run build
+      env:
+        VITE_API_BASE_URL: 'http://localhost:8001/api'
