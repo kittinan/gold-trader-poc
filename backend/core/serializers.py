@@ -136,3 +136,9 @@ class DepositCreateSerializer(serializers.ModelSerializer):
 class DepositCompleteSerializer(serializers.Serializer):
     deposit_id = serializers.IntegerField()
     reference = serializers.CharField()
+
+
+class DepositUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Deposit
+        fields = ('status',)

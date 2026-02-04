@@ -20,7 +20,6 @@ from .serializers import (
     PriceHistoryCreateSerializer,
     DepositSerializer,
     DepositCreateSerializer,
-    MockPaymentSerializer,
     DepositCompleteSerializer,
 )
 
