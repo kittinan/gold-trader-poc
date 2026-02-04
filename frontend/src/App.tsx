@@ -4,6 +4,7 @@ import { Register } from './pages/Register';
 import { Profile } from './pages/Profile';
 import { Dashboard } from './pages/Dashboard';
 import { Deposit } from './pages/Deposit';
+import Trading from './pages/Trading';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         {/* Protected Routes */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/deposit" element={<Deposit />} />
+        <Route path="/trade" element={<Trading />} />
         <Route path="/profile" element={<Profile />} />
         
         {/* Redirect root to dashboard */}

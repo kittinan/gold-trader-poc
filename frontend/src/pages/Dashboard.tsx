@@ -1,9 +1,13 @@
 import { useAuth } from '../hooks/useAuth';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
 import GoldHoldingsCard from '../components/common/GoldHoldingsCard';
+import TradingInterface from '../components/common/TradingInterface';
+import TradeHistory from '../components/common/TradeHistory';
+import { useState } from 'react';
 
 export const Dashboard = () => {
   const { user } = useAuth();
+  const [refreshTradeHistory, setRefreshTradeHistory] = useState(0);
 
   return (
     <ProtectedRoute>
@@ -29,6 +33,12 @@ export const Dashboard = () => {
                     className="border-yellow-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                   >
                     Dashboard
+                  </a>
+                  <a
+                    href="/trade"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Trading
                   </a>
                   <a
                     href="/deposit"
@@ -90,7 +100,7 @@ export const Dashboard = () => {
                         <p className="text-sm text-gray-500">Purchase gold at current market rates</p>
                       </div>
                     </div>
-                    <a href="/deposit" className="block w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium text-center">
+                    <a href="/trade" className="block w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium text-center">
                       Buy Now
                     </a>
                   </div>
@@ -107,9 +117,9 @@ export const Dashboard = () => {
                         <p className="text-sm text-gray-500">Sell your gold holdings instantly</p>
                       </div>
                     </div>
-                    <button className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium">
+                    <a href="/trade" className="block w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium text-center">
                       Sell Now
-                    </button>
+                    </a>
                   </div>
 
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
@@ -124,9 +134,9 @@ export const Dashboard = () => {
                         <p className="text-sm text-gray-500">Transaction history and reports</p>
                       </div>
                     </div>
-                    <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium">
+                    <a href="/trade" className="block w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium text-center">
                       View All
-                    </button>
+                    </a>
                   </div>
                 </div>
               </div>

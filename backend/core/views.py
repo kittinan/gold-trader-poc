@@ -682,3 +682,96 @@ class MockDepositProcessView(APIView):
             return Response({
                 'error': f'Failed to process mock deposit: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ==================== Trading Views ====================
+
+class TradeAPIView(APIView):
+    """
+    API endpoint for executing buy/sell orders.
+    POST /api/gold/trade/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        trade_type = request.data.get('type')  # BUY or SELL
+        amount = Decimal(str(request.data.get('amount', 0)))
+
+        if amount <= 0:
+            return Response({'error': 'จำนวนทองต้องมากกว่า 0'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get latest price
+        latest_price = PriceHistory.objects.order_by('-timestamp').first()
+        if not latest_price:
+            return Response({'error': 'ไม่มีข้อมูลราคาทองในขณะนี้'}, status=status.HTTP_400_BAD_REQUEST)
+
+        price_per_gram = latest_price.price_per_gram
+        total_cost = amount * price_per_gram
+
+        user = request.user
+        
+        with transaction.atomic():
+            if trade_type == 'BUY':
+                if user.balance < total_cost:
+                    return Response({'error': 'ยอดเงินไม่เพียงพอ'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                user.balance -= total_cost
+                user.save()
+
+                holding, _ = GoldHolding.objects.get_or_create(user=user, defaults={'amount': 0, 'avg_price': 0})
+                # Update weighted average price
+                new_total_amount = holding.amount + amount
+                new_avg_price = ((holding.amount * holding.avg_price) + (amount * price_per_gram)) / new_total_amount
+                holding.amount = new_total_amount
+                holding.avg_price = new_avg_price
+                holding.save()
+
+            elif trade_type == 'SELL':
+                try:
+                    holding = GoldHolding.objects.get(user=user)
+                    if holding.amount < amount:
+                        return Response({'error': 'จำนวนทองไม่เพียงพอ'}, status=status.HTTP_400_BAD_REQUEST)
+                except GoldHolding.DoesNotExist:
+                    return Response({'error': 'คุณยังไม่มีทองในครอบครอง'}, status=status.HTTP_400_BAD_REQUEST)
+
+                user.balance += total_cost
+                user.save()
+
+                holding.amount -= amount
+                holding.save()
+            else:
+                return Response({'error': 'ประเภทธุรกรรมไม่ถูกต้อง'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create Transaction Record
+            trans = Transaction.objects.create(
+                user=user,
+                transaction_type=trade_type,
+                gold_weight=amount,
+                gold_price_per_gram=price_per_gram,
+                total_amount=total_cost,
+                status='COMPLETED'
+            )
+
+        return Response({
+            'message': 'สำเร็จ',
+            'transaction': {
+                'id': trans.id,
+                'type': trans.transaction_type,
+                'amount': float(trans.gold_weight),
+                'total': float(trans.total_amount)
+            },
+            'new_balance': float(user.balance)
+        }, status=status.HTTP_200_OK)
+
+
+class TransactionListView(generics.ListAPIView):
+    """
+    API endpoint to list user's trade history.
+    GET /api/gold/transactions/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    from .serializers import TransactionSerializer
+    serializer_class = TransactionSerializer
+
+    def get_queryset(self):
+        return Transaction.objects.filter(user=self.request.user).order_by('-transaction_date')
