@@ -92,10 +92,10 @@ export default apiClient;
 // API Service functions
 export const authService = {
   login: async (email: string, password: string) => {
-    const formData = new FormData();
-    formData.append('email', email);
-    formData.append('password', password);
-    const response = await apiClient.post('/auth/token/', formData);
+    const response = await apiClient.post('/auth/login/', {
+      email,
+      password,
+    });
     return response.data;
   },
 
@@ -105,12 +105,12 @@ export const authService = {
   },
 
   register: async (userData: any) => {
-    const response = await apiClient.post('/users/', userData);
+    const response = await apiClient.post('/auth/register/', userData);
     return response.data;
   },
 
   getProfile: async () => {
-    const response = await apiClient.get('/users/me/');
+    const response = await apiClient.get('/auth/profile/');
     return response.data;
   },
 };

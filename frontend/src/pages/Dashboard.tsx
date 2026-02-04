@@ -31,6 +31,12 @@ export const Dashboard = () => {
                     Dashboard
                   </a>
                   <a
+                    href="/deposit"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Deposit
+                  </a>
+                  <a
                     href="/profile"
                     className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                   >
@@ -84,9 +90,9 @@ export const Dashboard = () => {
                         <p className="text-sm text-gray-500">Purchase gold at current market rates</p>
                       </div>
                     </div>
-                    <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium">
+                    <a href="/deposit" className="block w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium text-center">
                       Buy Now
-                    </button>
+                    </a>
                   </div>
 
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">

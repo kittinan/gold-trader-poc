@@ -44,6 +44,14 @@ export const useAuth = () => {
     setIsAuthenticated(false);
   };
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('access_token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+    };
+  };
+
   return {
     user,
     isAuthenticated,
@@ -52,5 +60,6 @@ export const useAuth = () => {
     register,
     logout,
     checkAuth,
+    getAuthHeaders,
   };
 };

@@ -70,6 +70,17 @@ export const Profile = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
+                    Account Balance
+                  </label>
+                  <div className="mt-1">
+                    <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
+                      ฿{parseFloat(user.balance || 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
                     Account Status
                   </label>
                   <div className="mt-1">
