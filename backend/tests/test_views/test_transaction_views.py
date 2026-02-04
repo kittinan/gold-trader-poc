@@ -61,8 +61,13 @@ class TestTradeAPIView:
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
     
-    def test_buy_gold_success(self, authenticated_client, verified_user):
+    def test_buy_gold_success(self, authenticated_client, user):
         """Test successful gold purchase."""
+        # Setup initial balance
+        user.balance = Decimal('100000.00')
+        user.save()
+        user.refresh_from_db()
+        
         # Create price history
         price = PriceHistoryFactory(price_per_gram=Decimal('2500.00'))
         
@@ -77,9 +82,9 @@ class TestTradeAPIView:
         assert response.data['transaction']['amount'] == 2.0
         
         # Verify balance was deducted
-        verified_user.refresh_from_db()
+        user.refresh_from_db()
         expected_balance = Decimal('100000.00') - (Decimal('2.0') * price.price_per_gram)
-        assert verified_user.balance == expected_balance
+        assert user.balance == expected_balance
     
     def test_buy_gold_insufficient_balance(self, authenticated_client, user):
         """Test buying gold with insufficient balance."""
@@ -97,22 +102,23 @@ class TestTradeAPIView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'error' in response.data
     
-    def test_sell_gold_success(self, authenticated_client, verified_user):
+    def test_sell_gold_success(self, authenticated_client, user):
         """Test successful gold sale."""
         # Create price history
         price = PriceHistoryFactory(price_per_gram=Decimal('2500.00'))
         
         # Create gold holding for user
         GoldHolding.objects.create(
-            user=verified_user,
+            user=user,
             amount=Decimal('10.000'),
             avg_price=Decimal('2400.00')
         )
         
         # Set initial balance
         initial_balance = Decimal('50000.00')
-        verified_user.balance = initial_balance
-        verified_user.save()
+        user.balance = initial_balance
+        user.save()
+        user.refresh_from_db()
         
         url = '/api/gold/trade/'
         data = {'type': 'SELL', 'amount': 2.0}
@@ -124,18 +130,18 @@ class TestTradeAPIView:
         assert response.data['transaction']['type'] == 'SELL'
         
         # Verify balance was increased
-        verified_user.refresh_from_db()
+        user.refresh_from_db()
         expected_balance = initial_balance + (Decimal('2.0') * price.price_per_gram)
-        assert verified_user.balance == expected_balance
+        assert user.balance == expected_balance
     
-    def test_sell_gold_insufficient_holdings(self, authenticated_client, verified_user):
+    def test_sell_gold_insufficient_holdings(self, authenticated_client, user):
         """Test selling gold with insufficient holdings."""
         # Create price history
         price = PriceHistoryFactory(price_per_gram=Decimal('2500.00'))
         
         # Create small gold holding
         GoldHolding.objects.create(
-            user=verified_user,
+            user=user,
             amount=Decimal('1.000'),
             avg_price=Decimal('2400.00')
         )

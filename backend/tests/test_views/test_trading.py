@@ -10,8 +10,15 @@ class TestTradingViews:
         url = reverse('core:gold_holdings_list')
         response = authenticated_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert Decimal(str(response.data[0]['amount'])) == gold_holding.amount
+        
+        # Handle both paginated and non-paginated responses
+        if 'results' in response.data:
+            data = response.data['results']
+        else:
+            data = response.data
+            
+        assert len(data) == 1
+        assert Decimal(str(data[0]['amount'])) == gold_holding.amount
 
     def test_buy_gold_success(self, authenticated_client, user, price_history):
         user.balance = Decimal('10000.00')

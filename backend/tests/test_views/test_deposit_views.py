@@ -105,8 +105,9 @@ class TestMockDepositProcessView:
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
     
-    def test_process_deposit_success(self, authenticated_client, verified_user):
+    def test_process_deposit_success(self, authenticated_verified_client, verified_user):
         """Test successful mock deposit processing."""
+        verified_user.refresh_from_db()
         initial_balance = verified_user.balance
         
         url = '/api/wallet/deposit/complete/'
@@ -116,7 +117,7 @@ class TestMockDepositProcessView:
             'notes': 'Test deposit'
         }
         
-        response = authenticated_client.post(url, data, format='json')
+        response = authenticated_verified_client.post(url, data, format='json')
         
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data['message'] == 'Mock deposit processed successfully'
@@ -176,12 +177,14 @@ class TestWalletBalanceView:
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
     
-    def test_get_balance_authorized(self, authenticated_client, verified_user):
+    def test_get_balance_authorized(self, authenticated_client, user):
         """Test getting balance with authentication."""
         url = '/api/wallet/balance/'
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['email'] == verified_user.email
-        assert float(response.data['balance']) == float(verified_user.balance)
+        assert response.data['email'] == user.email
+        # Ensure we compare with latest DB state
+        user.refresh_from_db()
+        assert float(response.data['balance']) == float(user.balance)
         assert 'updated_at' in response.data
