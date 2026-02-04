@@ -180,30 +180,25 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     name: Security Scanning
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-      
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results.sarif'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
 
   summary:
     runs-on: ubuntu-latest
     name: CI Summary
-    needs: [backend-tests, frontend-build, code-quality]
+    needs: [backend-tests, frontend-build, code-quality, security-scan]
     if: always()
-    
+
     steps:
       - name: Check results
         run: |
@@ -212,9 +207,10 @@ jobs:
           echo "#### Backend Tests: ${{ needs.backend-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "#### Frontend Build: ${{ needs.frontend-build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "#### Code Quality: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
-      
+          echo "#### Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+
       - name: Overall status
-        if: needs.backend-tests.result == 'failure' || needs.frontend-build.result == 'failure' || needs.code-quality.result == 'failure'
+        if: needs.backend-tests.result == 'failure' || needs.frontend-build.result == 'failure' || needs.code-quality.result == 'failure' || needs.security-scan.result == 'failure'
         run: |
           echo "::error::One or more jobs failed"
           exit 1
