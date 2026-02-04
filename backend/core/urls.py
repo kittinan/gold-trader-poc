@@ -30,6 +30,6 @@ urlpatterns = [
     path('wallet/deposits/', views.DepositListView.as_view(), name='deposit_list'),
     path('wallet/deposits/<int:pk>/', views.DepositDetailView.as_view(), name='deposit_detail'),
     path('wallet/deposit/create/', views.DepositCreateView.as_view(), name='deposit_create'),
-    path('wallet/deposit/complete/', views.DepositCompleteView.as_view(), name='deposit_complete'),
+    path('wallet/deposit/complete/', views.MockDepositProcessView.as_view(), name='deposit_complete'),
     path('wallet/balance/', views.WalletBalanceView.as_view(), name='wallet_balance'),
 ]

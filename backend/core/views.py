@@ -231,7 +231,17 @@ class TradeAPIView(APIView):
                 user=user, transaction_type=trade_type, gold_weight=amount,
                 gold_price_per_gram=price_per_gram, total_amount=total_cost, status='COMPLETED'
             )
-        return Response({'message': 'สำเร็จ', 'new_balance': float(user.balance)})
+        return Response({
+            'message': 'สำเร็จ', 
+            'transaction': {
+                'type': trans.transaction_type,
+                'amount': float(trans.gold_weight),
+                'gold_price_per_gram': float(trans.gold_price_per_gram),
+                'total_amount': float(trans.total_amount),
+                'status': trans.status,
+                'transaction_date': trans.transaction_date.isoformat()
+            }
+        })
 
 
 class TransactionListView(generics.ListAPIView):
@@ -286,6 +296,61 @@ class DepositCompleteView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class MockDepositProcessView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        amount = request.data.get('amount')
+        payment_method = request.data.get('payment_method', 'BANK_TRANSFER')
+        notes = request.data.get('notes', '')
+        
+        # Validate amount
+        if not amount:
+            return Response({'error': 'Amount is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            amount_decimal = Decimal(str(amount))
+            if amount_decimal <= 0:
+                return Response({'error': 'Amount must be positive'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Mock limit: 1,000,000
+            if amount_decimal > Decimal('1000000.00'):
+                return Response({'error': 'Amount exceeds mock limit of 1,000,000'}, status=status.HTTP_400_BAD_REQUEST)
+                
+        except (ValueError, TypeError):
+            return Response({'error': 'Invalid amount format'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        with transaction.atomic():
+            # Create completed deposit
+            reference = f"MOCK-{uuid.uuid4().hex[:12].upper()}"
+            deposit = Deposit.objects.create(
+                user=request.user,
+                amount=amount_decimal,
+                payment_method=payment_method,
+                notes=notes,
+                status='COMPLETED',
+                reference=reference
+            )
+            
+            # Update user balance
+            request.user.balance += amount_decimal
+            request.user.save()
+            
+            return Response({
+                'message': 'Mock deposit processed successfully',
+                'deposit': {
+                    'id': deposit.id,
+                    'amount': float(deposit.amount),
+                    'status': deposit.status,
+                    'payment_method': deposit.payment_method,
+                    'notes': deposit.notes,
+                    'reference': deposit.reference,
+                    'created_at': deposit.created_at.isoformat(),
+                    'updated_at': deposit.updated_at.isoformat()
+                }
+            }, status=status.HTTP_201_CREATED)
+
+
 class DepositDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DepositSerializer
@@ -298,4 +363,8 @@ class WalletBalanceView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        return Response({'balance': float(request.user.balance)})
+        return Response({
+            'email': request.user.email,
+            'balance': float(request.user.balance),
+            'updated_at': request.user.updated_at.isoformat()
+        })
