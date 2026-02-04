@@ -12,6 +12,7 @@ from tests.factories.deposit_factory import (
 from tests.factories.user_factory import UserFactory
 
 
+@pytest.mark.django_db
 class TestDepositModel:
     """Test cases for Deposit model."""
     

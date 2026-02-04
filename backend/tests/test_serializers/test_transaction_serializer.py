@@ -9,9 +9,10 @@ from tests.factories.transaction_factory import TransactionFactory
 from tests.factories.user_factory import UserFactory
 
 
+@pytest.mark.django_db
 class TestTransactionSerializer:
     """Test cases for TransactionSerializer."""
-    
+
     def test_serialize_transaction(self):
         """Test serializing transaction."""
         user = UserFactory(email='test@example.com')

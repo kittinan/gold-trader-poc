@@ -8,6 +8,7 @@ from tests.factories.wallet_factory import WalletFactory, GoldHoldingFactory
 from tests.factories.user_factory import UserFactory
 
 
+@pytest.mark.django_db
 class TestWalletModel:
     """Test cases for Wallet model."""
     
@@ -83,6 +84,7 @@ class TestWalletModel:
         assert wallet.gold_holdings == Decimal('12.345')
 
 
+@pytest.mark.django_db
 class TestGoldHoldingModel:
     """Test cases for GoldHolding model."""
     

@@ -10,9 +10,10 @@ from tests.factories.user_factory import UserFactory, VerifiedUserFactory, Admin
 User = get_user_model()
 
 
+@pytest.mark.django_db
 class TestUserModel:
     """Test cases for User model."""
-    
+
     def test_create_user(self, user_data):
         """Test creating a regular user."""
         password = user_data.pop('password')

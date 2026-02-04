@@ -14,9 +14,10 @@ from core.serializers import (
 from tests.factories.user_factory import UserFactory
 
 
+@pytest.mark.django_db
 class TestUserRegistrationSerializer:
     """Test cases for UserRegistrationSerializer."""
-    
+
     def test_valid_user_registration(self):
         """Test creating user with valid data."""
         data = {
@@ -60,9 +61,10 @@ class TestUserRegistrationSerializer:
         assert 'password' in serializer.errors
 
 
+@pytest.mark.django_db
 class TestUserLoginSerializer:
     """Test cases for UserLoginSerializer."""
-    
+
     def test_valid_login_data(self):
         """Test valid login data."""
         data = {
@@ -85,9 +87,10 @@ class TestUserLoginSerializer:
         assert 'email' in serializer.errors
 
 
+@pytest.mark.django_db
 class TestUserProfileSerializer:
     """Test cases for UserProfileSerializer."""
-    
+
     def test_serialize_user_profile(self):
         """Test serializing user profile."""
         user = UserFactory(
@@ -115,9 +118,10 @@ class TestUserProfileSerializer:
         assert 'balance' in read_only_fields
 
 
+@pytest.mark.django_db
 class TestUserProfileUpdateSerializer:
     """Test cases for UserProfileUpdateSerializer."""
-    
+
     def test_update_user_profile(self):
         """Test updating user profile."""
         user = UserFactory(
@@ -160,9 +164,10 @@ class TestUserProfileUpdateSerializer:
         assert updated_user.last_name == 'Doe'  # Unchanged
 
 
+@pytest.mark.django_db
 class TestUserSerializer:
     """Test cases for UserSerializer."""
-    
+
     def test_serialize_user(self):
         """Test serializing user data."""
         user = UserFactory(

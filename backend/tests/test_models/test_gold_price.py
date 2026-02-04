@@ -7,6 +7,7 @@ from core.models import GoldPrice, PriceHistory
 from tests.factories.gold_price_factory import GoldPriceFactory, PriceHistoryFactory, VariablePriceHistoryFactory
 
 
+@pytest.mark.django_db
 class TestGoldPriceModel:
     """Test cases for GoldPrice model."""
     
@@ -65,6 +66,7 @@ class TestGoldPriceModel:
         assert all_prices[0].timestamp >= all_prices[1].timestamp
 
 
+@pytest.mark.django_db
 class TestPriceHistoryModel:
     """Test cases for PriceHistory model."""
     

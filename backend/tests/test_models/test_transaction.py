@@ -13,6 +13,7 @@ from tests.factories.transaction_factory import (
 from tests.factories.user_factory import UserFactory
 
 
+@pytest.mark.django_db
 class TestTransactionModel:
     """Test cases for Transaction model."""
     

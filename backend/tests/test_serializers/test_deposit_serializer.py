@@ -13,9 +13,10 @@ from tests.factories.deposit_factory import DepositFactory
 from tests.factories.user_factory import UserFactory
 
 
+@pytest.mark.django_db
 class TestDepositSerializer:
     """Test cases for DepositSerializer."""
-    
+
     def test_serialize_deposit(self):
         """Test serializing deposit."""
         user = UserFactory(email='test@example.com')
@@ -82,9 +83,10 @@ class TestDepositSerializer:
         assert 'updated_at' in data
 
 
+@pytest.mark.django_db
 class TestDepositCreateSerializer:
     """Test cases for DepositCreateSerializer."""
-    
+
     def test_valid_deposit_creation(self):
         """Test creating deposit with valid amount."""
         data = {
@@ -110,9 +112,10 @@ class TestDepositCreateSerializer:
         assert serializer.is_valid()
 
 
+@pytest.mark.django_db
 class TestDepositCompleteSerializer:
     """Test cases for DepositCompleteSerializer."""
-    
+
     def test_valid_deposit_completion(self):
         """Test valid deposit completion data."""
         data = {
