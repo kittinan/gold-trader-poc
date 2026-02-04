@@ -7,7 +7,7 @@ from django.db.models import Sum, F
 from django.db import transaction
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import uuid
 
 from .models import User, GoldHolding, PriceHistory, Deposit, Transaction
@@ -208,7 +208,7 @@ class TradeAPIView(APIView):
                     return Response({'error': 'ยอดเงินไม่เพียงพอ'}, status=status.HTTP_400_BAD_REQUEST)
                 user.balance -= total_cost
                 user.save()
-                holding, _ = GoldHolding.objects.get_or_create(user=user, defaults={'amount': 0, 'avg_price': 0})
+                holding, _ = GoldHolding.objects.get_or_create(user=user, defaults={'amount': Decimal('0'), 'avg_price': Decimal('0')})
                 new_total_amount = holding.amount + amount
                 new_avg_price = ((holding.amount * holding.avg_price) + (amount * price_per_gram)) / new_total_amount
                 holding.amount = new_total_amount
@@ -254,12 +254,40 @@ class TransactionListView(generics.ListAPIView):
 
 # ==================== Deposit Views ====================
 
-class DepositListView(generics.ListAPIView):
+class DepositListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = DepositSerializer
 
     def get_queryset(self):
         return Deposit.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return DepositCreateSerializer
+        return DepositSerializer
+
+    def perform_create(self, serializer):
+        # Auto-generate reference
+        reference = f"MOCK-{uuid.uuid4().hex[:12].upper()}"
+        # For mock purposes, auto-complete the deposit
+        serializer.save(user=self.request.user, reference=reference, status='COMPLETED')
+        
+        # Update user balance immediately for mock deposit
+        user = self.request.user
+        # Ensure balance is Decimal
+        current_balance = Decimal(str(user.balance)) if not isinstance(user.balance, Decimal) else user.balance
+        user.balance = current_balance + serializer.validated_data['amount']
+        user.save()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        
+        # Use full serializer for response
+        response_serializer = DepositSerializer(serializer.instance)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class DepositCreateView(APIView):
@@ -317,7 +345,7 @@ class MockDepositProcessView(APIView):
             if amount_decimal > Decimal('1000000.00'):
                 return Response({'error': 'Amount exceeds mock limit of 1,000,000'}, status=status.HTTP_400_BAD_REQUEST)
                 
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, InvalidOperation):
             return Response({'error': 'Invalid amount format'}, status=status.HTTP_400_BAD_REQUEST)
         
         with transaction.atomic():
@@ -326,15 +354,15 @@ class MockDepositProcessView(APIView):
             deposit = Deposit.objects.create(
                 user=request.user,
                 amount=amount_decimal,
-                payment_method=payment_method,
-                notes=notes,
                 status='COMPLETED',
                 reference=reference
             )
             
-            # Update user balance
-            request.user.balance += amount_decimal
-            request.user.save()
+            # Update user balance - refresh to get latest balance
+            from core.models import User
+            user = User.objects.select_for_update().get(pk=request.user.pk)
+            user.balance = Decimal(str(user.balance)) + amount_decimal
+            user.save()
             
             return Response({
                 'message': 'Mock deposit processed successfully',
@@ -342,8 +370,6 @@ class MockDepositProcessView(APIView):
                     'id': deposit.id,
                     'amount': float(deposit.amount),
                     'status': deposit.status,
-                    'payment_method': deposit.payment_method,
-                    'notes': deposit.notes,
                     'reference': deposit.reference,
                     'created_at': deposit.created_at.isoformat(),
                     'updated_at': deposit.updated_at.isoformat()

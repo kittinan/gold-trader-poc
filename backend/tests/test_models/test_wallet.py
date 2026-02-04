@@ -192,10 +192,11 @@ class TestGoldHoldingModel:
             avg_price=Decimal('2345.67')
         )
         
-        expected_value = holding.amount * holding.avg_price
+        # Model quantizes to 2 decimal places: 5.123 * 2345.67 = 12016.86741 → 12016.87
+        expected_value = (holding.amount * holding.avg_price).quantize(Decimal('0.01'))
         assert holding.total_value == expected_value
-        # Check precision
-        assert abs(holding.total_value - Decimal('12019.91')) < Decimal('0.01')
+        # Check precision - should match quantized value
+        assert holding.total_value == Decimal('12016.87')
     
     def test_gold_holding_update(self):
         """Test updating gold holding recalculates total_value."""

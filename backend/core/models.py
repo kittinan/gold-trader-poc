@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from decimal import Decimal
 
 
 class User(AbstractUser):
@@ -123,8 +124,10 @@ class GoldHolding(models.Model):
         return f"{self.user.email} - {self.amount}g @ {self.avg_price} THB/g"
 
     def save(self, *args, **kwargs):
-        # Auto-calculate total value
-        self.total_value = self.amount * self.avg_price
+        # Auto-calculate total value with 2 decimal places precision
+        amount = Decimal(str(self.amount)) if not isinstance(self.amount, Decimal) else self.amount
+        avg_price = Decimal(str(self.avg_price)) if not isinstance(self.avg_price, Decimal) else self.avg_price
+        self.total_value = (amount * avg_price).quantize(Decimal('0.01'))
         super().save(*args, **kwargs)
 
 

@@ -87,12 +87,13 @@ class GoldHoldingSerializer(serializers.ModelSerializer):
 
     def get_profit_loss(self, obj):
         current_value = self.get_current_value(obj)
-        return float(current_value - obj.total_value)
+        return float(current_value - float(obj.total_value))
 
     def get_profit_loss_percent(self, obj):
         current_value = self.get_current_value(obj)
-        if obj.total_value > 0:
-            return float(((current_value - obj.total_value) / obj.total_value) * 100)
+        total_value_float = float(obj.total_value)
+        if total_value_float > 0:
+            return float(((current_value - total_value_float) / total_value_float) * 100)
         return 0.0
 
 
