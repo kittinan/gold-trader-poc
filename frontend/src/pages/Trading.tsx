@@ -15,7 +15,7 @@ const Trading: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    const ws = new WebSocket(`ws://${window.location.host}/ws/gold-price/`);
+    const ws = new WebSocket(`ws://localhost:8001/ws/gold-price/`);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'gold_price_update') {
@@ -28,9 +28,9 @@ const Trading: React.FC = () => {
   const fetchData = async () => {
     try {
       const [holdingsRes, transRes, priceRes] = await Promise.all([
-        api.get('/api/gold/holdings/'),
-        api.get('/api/gold/transactions/'),
-        api.get('/api/gold/prices/current/')
+        api.get('/gold/holdings/'),
+        api.get('/gold/transactions/'),
+        api.get('/gold/prices/current/')
       ]);
       setHoldings(holdingsRes.data);
       setTransactions(transRes.data);
@@ -45,7 +45,7 @@ const Trading: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await api.post('/api/gold/trade/', {
+      await api.post('/gold/trade/', {
         type,
         amount,
       });

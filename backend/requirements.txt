@@ -9,3 +9,9 @@ python-decouple>=3.8,<4.0
 django-filter>=24.0.0,<25.0.0
 gunicorn>=21.2.0,<23.0.0
 whitenoise>=6.6.0,<7.0.0
+
+# Testing dependencies
+pytest>=7.0.0
+pytest-django>=4.5.0
+factory-boy>=3.3.0
+pytest-cov>=4.0.0
