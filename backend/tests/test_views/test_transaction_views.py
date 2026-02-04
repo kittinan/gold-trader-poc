@@ -12,9 +12,10 @@ from tests.factories.user_factory import UserFactory, VerifiedUserFactory
 from tests.factories.gold_price_factory import PriceHistoryFactory
 
 
+@pytest.mark.django_db
 class TestTransactionListView:
     """Test cases for transaction list view."""
-    
+
     def test_get_transactions_unauthorized(self, api_client):
         """Test getting transactions without authentication."""
         url = '/api/gold/transactions/'
@@ -48,9 +49,10 @@ class TestTransactionListView:
         assert len(response.data) == 0  # No transactions for authenticated user
 
 
+@pytest.mark.django_db
 class TestTradeAPIView:
     """Test cases for trade API view."""
-    
+
     def test_trade_unauthorized(self, api_client):
         """Test trading without authentication."""
         url = '/api/gold/trade/'

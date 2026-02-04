@@ -11,9 +11,10 @@ from core.serializers import UserSerializer
 from tests.factories.user_factory import UserFactory, VerifiedUserFactory
 
 
+@pytest.mark.django_db
 class TestRegisterView:
     """Test cases for user registration view."""
-    
+
     @pytest.fixture
     def api_client(self):
         return APIClient()
@@ -72,9 +73,10 @@ class TestRegisterView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+@pytest.mark.django_db
 class TestLoginView:
     """Test cases for user login view."""
-    
+
     @pytest.fixture
     def api_client(self):
         return APIClient()
@@ -117,9 +119,10 @@ class TestLoginView:
         assert 'error' in response.data
 
 
+@pytest.mark.django_db
 class TestProfileView:
     """Test cases for user profile view."""
-    
+
     def test_get_profile_unauthorized(self, api_client):
         """Test getting profile without authentication."""
         url = '/api/auth/profile/'
@@ -157,9 +160,10 @@ class TestProfileView:
         assert user.last_name == 'Smith'
 
 
+@pytest.mark.django_db
 class TestLogoutView:
     """Test cases for logout view."""
-    
+
     def test_logout_unauthorized(self, api_client):
         """Test logout without authentication."""
         url = '/api/auth/logout/'
@@ -181,9 +185,10 @@ class TestLogoutView:
         assert response.data['message'] == 'Logout successful'
 
 
+@pytest.mark.django_db
 class TestUserMeView:
     """Test cases for /api/auth/me/ endpoint."""
-    
+
     def test_user_me_unauthorized(self, api_client):
         """Test getting user info without authentication."""
         url = '/api/auth/me/'

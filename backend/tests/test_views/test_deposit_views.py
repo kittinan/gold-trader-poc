@@ -9,9 +9,10 @@ from tests.factories.deposit_factory import DepositFactory, CompletedDepositFact
 from tests.factories.user_factory import UserFactory, VerifiedUserFactory
 
 
+@pytest.mark.django_db
 class TestDepositListView:
     """Test cases for deposit list view."""
-    
+
     def test_get_deposits_unauthorized(self, api_client):
         """Test getting deposits without authentication."""
         url = '/api/deposits/'
@@ -60,9 +61,10 @@ class TestDepositListView:
         assert float(user.balance) == 10000.00
 
 
+@pytest.mark.django_db
 class TestDepositDetailView:
     """Test cases for deposit detail view."""
-    
+
     def test_get_deposit_unauthorized(self, api_client):
         """Test getting deposit detail without authentication."""
         deposit = DepositFactory()
@@ -91,9 +93,10 @@ class TestDepositDetailView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest.mark.django_db
 class TestMockDepositProcessView:
     """Test cases for mock deposit processing view."""
-    
+
     def test_process_deposit_unauthorized(self, api_client):
         """Test processing deposit without authentication."""
         url = '/api/deposits/mock-process/'
@@ -162,9 +165,10 @@ class TestMockDepositProcessView:
         assert 'error' in response.data
 
 
+@pytest.mark.django_db
 class TestWalletBalanceView:
     """Test cases for wallet balance view."""
-    
+
     def test_get_balance_unauthorized(self, api_client):
         """Test getting balance without authentication."""
         url = '/api/wallet/balance/'
