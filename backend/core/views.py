@@ -1,100 +1,148 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework import status, generics, permissions
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
-from .models import User, GoldPrice, Transaction, Wallet
+from rest_framework.decorators import api_view, permission_classes
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from .models import User
 from .serializers import (
-    UserSerializer, UserRegistrationSerializer,
-    GoldPriceSerializer, TransactionSerializer, WalletSerializer
+    UserRegistrationSerializer,
+    UserLoginSerializer,
+    UserProfileSerializer,
+    UserProfileUpdateSerializer,
+    UserSerializer,
 )
 
 
-class UserViewSet(viewsets.ModelViewSet):
-    """ViewSet for User model."""
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    search_fields = ['email', 'username']
-    filterset_fields = ['is_verified']
-    ordering_fields = ['created_at', 'email']
+class RegisterAPIView(APIView):
+    """
+    API endpoint for user registration.
+    POST /api/auth/register/
+    """
+    permission_classes = [permissions.AllowAny]
 
-    def get_permissions(self):
-        """Custom permission for registration action."""
-        if self.action == 'create':
-            return [AllowAny()]
-        return [IsAuthenticated()]
+    def post(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            # Generate tokens for the new user
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'message': 'Registration successful',
+                'user': UserSerializer(user).data,
+                'tokens': {
+                    'access': str(refresh.access_token),
+                    'refresh': str(refresh),
+                }
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginAPIView(APIView):
+    """
+    API endpoint for user login.
+    POST /api/auth/login/
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            password = serializer.validated_data['password']
+
+            user = authenticate(request, username=email, password=password)
+
+            if user:
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'message': 'Login successful',
+                    'user': UserSerializer(user).data,
+                    'tokens': {
+                        'access': str(refresh.access_token),
+                        'refresh': str(refresh),
+                    }
+                }, status=status.HTTP_200_OK)
+
+            return Response({
+                'error': 'Invalid email or password'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    """
+    API endpoint for retrieving and updating user profile.
+    GET /api/auth/profile/
+    PATCH /api/auth/profile/
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
-        """Use different serializer for registration."""
-        if self.action == 'create':
-            return UserRegistrationSerializer
-        return UserSerializer
+        if self.request.method == 'PATCH':
+            return UserProfileUpdateSerializer
+        return UserProfileSerializer
 
-    @action(detail=False, methods=['get'])
-    def me(self, request):
-        """Get current user profile."""
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+    def get_object(self):
+        return self.request.user
 
+    def get(self, request):
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-class GoldPriceViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for GoldPrice model (read-only)."""
-    queryset = GoldPrice.objects.all()
-    serializer_class = GoldPriceSerializer
-    permission_classes = [AllowAny]
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ['currency']
-    ordering_fields = ['timestamp']
-    ordering = ['-timestamp']
-
-    @action(detail=False, methods=['get'])
-    def latest(self, request):
-        """Get the latest gold price."""
-        latest_price = self.queryset.first()
-        serializer = self.get_serializer(latest_price)
-        return Response(serializer.data)
-
-
-class TransactionViewSet(viewsets.ModelViewSet):
-    """ViewSet for Transaction model."""
-    serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ['transaction_type', 'status']
-    ordering_fields = ['transaction_date', 'created_at']
-    ordering = ['-transaction_date']
-
-    def get_queryset(self):
-        """Only return transactions for the current user."""
-        return Transaction.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        """Set the user and calculate total amount."""
-        gold_weight = serializer.validated_data['gold_weight']
-        gold_price_per_gram = serializer.validated_data['gold_price_per_gram']
-        total_amount = gold_weight * gold_price_per_gram
-
-        serializer.save(
-            user=self.request.user,
-            total_amount=total_amount
+    def patch(self, request):
+        serializer = UserProfileUpdateSerializer(
+            request.user,
+            data=request.data,
+            partial=True
         )
+        if serializer.is_valid():
+            serializer.save()
+            # Return the full profile with all fields
+            full_serializer = UserProfileSerializer(request.user)
+            return Response(full_serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class WalletViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for Wallet model (read-only)."""
-    serializer_class = WalletSerializer
-    permission_classes = [IsAuthenticated]
+class LogoutAPIView(APIView):
+    """
+    API endpoint for user logout.
+    POST /api/auth/logout/
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        """Only return wallet for the current user."""
-        return Wallet.objects.filter(user=self.request.user)
+    def post(self, request):
+        try:
+            refresh_token = request.data.get('refresh')
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            return Response({
+                'message': 'Logout successful'
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                'error': 'Invalid refresh token'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['get'])
-    def my_wallet(self, request):
-        """Get current user's wallet."""
-        wallet = Wallet.objects.get(user=request.user)
-        serializer = self.get_serializer(wallet)
-        return Response(serializer.data)
+
+class TokenRefreshViewCustom(TokenRefreshView):
+    """
+    Custom token refresh view.
+    POST /api/auth/token/refresh/
+    """
+    pass
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_me_view(request):
+    """
+    Simple endpoint to get current user info.
+    GET /api/auth/me/
+    """
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data)

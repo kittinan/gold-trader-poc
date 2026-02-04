@@ -1,25 +1,18 @@
 from rest_framework import serializers
-from .models import User, GoldPrice, Transaction, Wallet
-
-
-class UserSerializer(serializers.ModelSerializer):
-    """Serializer for User model."""
-
-    class Meta:
-        model = User
-        fields = ['id', 'email', 'username', 'phone_number', 'date_of_birth',
-                  'is_verified', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'is_verified', 'created_at', 'updated_at']
+from django.contrib.auth.password_validation import validate_password
+from .models import User, Transaction
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for user registration."""
-    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-    password_confirm = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    """
+    Serializer for user registration.
+    """
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password_confirm = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'password', 'password_confirm', 'phone_number']
+        fields = ('username', 'email', 'password', 'password_confirm', 'phone_number', 'date_of_birth')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
@@ -29,36 +22,58 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         user = User.objects.create_user(**validated_data)
-        # Create wallet for new user
-        Wallet.objects.create(user=user)
         return user
 
 
-class GoldPriceSerializer(serializers.ModelSerializer):
-    """Serializer for GoldPrice model."""
+class UserLoginSerializer(serializers.Serializer):
+    """
+    Serializer for user login.
+    """
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True, write_only=True)
 
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user profile (read and update).
+    """
     class Meta:
-        model = GoldPrice
-        fields = ['id', 'price_per_gram', 'price_per_baht', 'currency',
-                  'timestamp', 'source']
-        read_only_fields = ['id', 'timestamp']
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name',
+                  'phone_number', 'date_of_birth', 'balance', 'is_verified',
+                  'created_at', 'updated_at')
+        read_only_fields = ('id', 'email', 'balance', 'is_verified', 'created_at', 'updated_at')
+
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for partial user profile updates.
+    """
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'phone_number', 'date_of_birth')
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Basic user serializer for public display.
+    """
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name')
+        read_only_fields = ('id', 'username', 'email')
 
 
 class TransactionSerializer(serializers.ModelSerializer):
-    """Serializer for Transaction model."""
+    """
+    Serializer for transaction display.
+    """
+    user_email = serializers.EmailField(source='user.email', read_only=True)
 
     class Meta:
         model = Transaction
-        fields = ['id', 'user', 'transaction_type', 'gold_weight',
-                  'gold_price_per_gram', 'total_amount', 'status',
-                  'transaction_date', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'user', 'total_amount', 'created_at', 'updated_at']
-
-
-class WalletSerializer(serializers.ModelSerializer):
-    """Serializer for Wallet model."""
-
-    class Meta:
-        model = Wallet
-        fields = ['id', 'user', 'balance', 'gold_holdings', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+        fields = ('id', 'user', 'user_email', 'transaction_type', 'gold_weight',
+                  'gold_price_per_gram', 'total_amount', 'status', 'transaction_date',
+                  'created_at', 'updated_at')
+        read_only_fields = ('id', 'user_email', 'total_amount', 'transaction_date',
+                           'created_at', 'updated_at')
