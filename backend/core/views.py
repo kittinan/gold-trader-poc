@@ -286,6 +286,14 @@ class DepositCompleteView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class DepositDetailView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DepositSerializer
+
+    def get_queryset(self):
+        return Deposit.objects.filter(user=self.request.user)
+
+
 class WalletBalanceView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

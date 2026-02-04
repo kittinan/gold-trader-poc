@@ -15,7 +15,7 @@ class TestDepositListView:
 
     def test_get_deposits_unauthorized(self, api_client):
         """Test getting deposits without authentication."""
-        url = '/api/deposits/'
+        url = '/api/wallet/deposits/'
         response = api_client.get(url)
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -26,7 +26,7 @@ class TestDepositListView:
         for _ in range(3):
             DepositFactory(user=user)
         
-        url = '/api/deposits/'
+        url = '/api/wallet/deposits/'
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -38,7 +38,7 @@ class TestDepositListView:
         other_user = UserFactory(email='other@example.com')
         DepositFactory(user=other_user)
         
-        url = '/api/deposits/'
+        url = '/api/wallet/deposits/'
         response = authenticated_client.get(url)
         
         # Should only see authenticated user's deposits
@@ -47,7 +47,7 @@ class TestDepositListView:
     
     def test_create_deposit_authenticated(self, authenticated_client, user):
         """Test creating deposit with authentication."""
-        url = '/api/deposits/'
+        url = '/api/wallet/deposits/'
         data = {'amount': '10000.00'}
         
         response = authenticated_client.post(url, data, format='json')
@@ -99,7 +99,7 @@ class TestMockDepositProcessView:
 
     def test_process_deposit_unauthorized(self, api_client):
         """Test processing deposit without authentication."""
-        url = '/api/deposits/mock-process/'
+        url = '/api/wallet/deposit/complete/'
         data = {'amount': '10000.00'}
         response = api_client.post(url, data, format='json')
         
@@ -109,7 +109,7 @@ class TestMockDepositProcessView:
         """Test successful mock deposit processing."""
         initial_balance = verified_user.balance
         
-        url = '/api/deposits/mock-process/'
+        url = '/api/wallet/deposit/complete/'
         data = {
             'amount': '50000.00',
             'payment_method': 'BANK_TRANSFER',
@@ -130,7 +130,7 @@ class TestMockDepositProcessView:
     
     def test_process_deposit_missing_amount(self, authenticated_client, verified_user):
         """Test processing deposit without amount."""
-        url = '/api/deposits/mock-process/'
+        url = '/api/wallet/deposit/complete/'
         data = {'payment_method': 'BANK_TRANSFER'}
         response = authenticated_client.post(url, data, format='json')
         
@@ -139,7 +139,7 @@ class TestMockDepositProcessView:
     
     def test_process_deposit_negative_amount(self, authenticated_client, verified_user):
         """Test processing deposit with negative amount."""
-        url = '/api/deposits/mock-process/'
+        url = '/api/wallet/deposit/complete/'
         data = {'amount': '-1000.00'}
         response = authenticated_client.post(url, data, format='json')
         
@@ -148,7 +148,7 @@ class TestMockDepositProcessView:
     
     def test_process_deposit_exceeds_limit(self, authenticated_client, verified_user):
         """Test processing deposit exceeding mock limit."""
-        url = '/api/deposits/mock-process/'
+        url = '/api/wallet/deposit/complete/'
         data = {'amount': '2000000.00'}  # Exceeds 1,000,000 limit
         response = authenticated_client.post(url, data, format='json')
         
@@ -157,7 +157,7 @@ class TestMockDepositProcessView:
     
     def test_process_deposit_invalid_amount_format(self, authenticated_client, verified_user):
         """Test processing deposit with invalid amount format."""
-        url = '/api/deposits/mock-process/'
+        url = '/api/wallet/deposit/complete/'
         data = {'amount': 'invalid'}
         response = authenticated_client.post(url, data, format='json')
         
