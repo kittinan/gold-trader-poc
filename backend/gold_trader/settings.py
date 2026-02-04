@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import sys
 from pathlib import Path
+from datetime import timedelta
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -170,8 +171,8 @@ REST_FRAMEWORK = {
 
 # JWT Settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': 60 * 60,  # 1 hour
-    'REFRESH_TOKEN_LIFETIME': 60 * 60 * 24 * 7,  # 7 days
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # 1 hour
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # 7 days
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,

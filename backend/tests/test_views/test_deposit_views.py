@@ -30,7 +30,7 @@ class TestDepositListView:
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 3
+        assert len(response.data['results']) == 3
     
     def test_get_other_users_deposits(self, authenticated_client, user):
         """Test that user can't see other users' deposits."""
@@ -43,7 +43,7 @@ class TestDepositListView:
         
         # Should only see authenticated user's deposits
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 0
+        assert len(response.data['results']) == 0
     
     def test_create_deposit_authenticated(self, authenticated_client, user):
         """Test creating deposit with authentication."""
@@ -68,7 +68,7 @@ class TestDepositDetailView:
     def test_get_deposit_unauthorized(self, api_client):
         """Test getting deposit detail without authentication."""
         deposit = DepositFactory()
-        url = f'/api/deposits/{deposit.id}/'
+        url = f'/api/wallet/deposits/{deposit.id}/'
         response = api_client.get(url)
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -76,7 +76,7 @@ class TestDepositDetailView:
     def test_get_deposit_authorized_owner(self, authenticated_client, user):
         """Test getting own deposit detail."""
         deposit = DepositFactory(user=user)
-        url = f'/api/deposits/{deposit.id}/'
+        url = f'/api/wallet/deposits/{deposit.id}/'
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -86,7 +86,7 @@ class TestDepositDetailView:
         """Test getting other user's deposit detail."""
         other_user = UserFactory(email='other@example.com')
         deposit = DepositFactory(user=other_user)
-        url = f'/api/deposits/{deposit.id}/'
+        url = f'/api/wallet/deposits/{deposit.id}/'
         response = authenticated_client.get(url)
         
         # Should not find the deposit

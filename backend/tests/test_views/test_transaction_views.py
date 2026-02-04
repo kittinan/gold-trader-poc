@@ -33,7 +33,7 @@ class TestTransactionListView:
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 3
+        assert len(response.data['results']) == 3
     
     def test_get_other_users_transactions(self, authenticated_client, user):
         """Test that user can't see other users' transactions."""
@@ -46,7 +46,7 @@ class TestTransactionListView:
         
         # Should only see authenticated user's transactions
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 0  # No transactions for authenticated user
+        assert len(response.data['results']) == 0  # No transactions for authenticated user
 
 
 @pytest.mark.django_db
