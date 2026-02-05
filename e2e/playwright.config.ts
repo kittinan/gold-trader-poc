@@ -26,10 +26,13 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: 'http://localhost:5173',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+    
+    /* Action timeout */
+    actionTimeout: process.env.CI ? 30000 : 10000,
   },
 
   /* Configure projects for major browsers */
@@ -70,17 +73,19 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: [
-    {
-      command: 'cd backend && python manage.py runserver',
-      url: 'http://localhost:8000',
-      reuseExistingServer: !process.env.CI,
-    },
-    {
-      command: 'cd frontend && npm run dev',
-      url: 'http://localhost:5173',
-      reuseExistingServer: !process.env.CI,
-    }
-  ],
+  /* Run your local dev server before starting the tests (skipped in CI - Docker handles it) */
+  ...(!process.env.CI && {
+    webServer: [
+      {
+        command: 'cd backend && python manage.py runserver',
+        url: 'http://localhost:8000',
+        reuseExistingServer: true,
+      },
+      {
+        command: 'cd frontend && npm run dev',
+        url: 'http://localhost:5173',
+        reuseExistingServer: true,
+      }
+    ],
+  }),
 });
