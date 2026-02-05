@@ -10,7 +10,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from decimal import Decimal, InvalidOperation
 import uuid
 
-from .models import User, GoldHolding, PriceHistory, Deposit, Transaction
+from .models import User, GoldHolding, PriceHistory, Deposit, Transaction, PriceAlert
 from .serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -25,6 +25,9 @@ from .serializers import (
     DepositCreateSerializer,
     DepositCompleteSerializer,
     TransactionSerializer,
+    PriceAlertSerializer,
+    PriceAlertCreateSerializer,
+    PriceAlertUpdateSerializer,
 )
 
 
@@ -394,3 +397,58 @@ class WalletBalanceView(APIView):
             'balance': float(request.user.balance),
             'updated_at': request.user.updated_at.isoformat()
         })
+
+
+# ==================== Price Alert Views ====================
+
+class PriceAlertListView(generics.ListCreateAPIView):
+    """
+    List all price alerts for the authenticated user or create a new alert.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return PriceAlertCreateSerializer
+        return PriceAlertSerializer
+
+    def get_queryset(self):
+        return PriceAlert.objects.filter(user=self.request.user).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class PriceAlertDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update or delete a price alert.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PriceAlertUpdateSerializer
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return PriceAlertUpdateSerializer
+        return PriceAlertSerializer
+
+    def get_queryset(self):
+        return PriceAlert.objects.filter(user=self.request.user)
+
+
+class PriceAlertToggleView(APIView):
+    """
+    Toggle active status of a price alert.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            alert = PriceAlert.objects.get(pk=pk, user=request.user)
+            alert.is_active = not alert.is_active
+            alert.save()
+            return Response({
+                'message': f'Alert {"activated" if alert.is_active else "deactivated"}',
+                'is_active': alert.is_active
+            })
+        except PriceAlert.DoesNotExist:
+            return Response({'error': 'Alert not found'}, status=status.HTTP_404_NOT_FOUND)

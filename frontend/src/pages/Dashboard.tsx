@@ -1,13 +1,40 @@
 import { useAuth } from '../hooks/useAuth';
+import { useGoldPriceWebSocket } from '../hooks/useGoldPriceWebSocket';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
 import GoldHoldingsCard from '../components/common/GoldHoldingsCard';
 import TradingInterface from '../components/common/TradingInterface';
 import TradeHistory from '../components/common/TradeHistory';
-import { useState } from 'react';
+import GoldPriceChart from '../components/charts/GoldPriceChart';
+import PortfolioChart from '../components/charts/PortfolioChart';
+import { useState, useEffect } from 'react';
 
 export const Dashboard = () => {
   const { user } = useAuth();
+  const { currentPrice, connectionStatus, lastUpdate } = useGoldPriceWebSocket();
   const [refreshTradeHistory, setRefreshTradeHistory] = useState(0);
+  const [previousPrice, setPreviousPrice] = useState<number | null>(null);
+  const [priceDirection, setPriceDirection] = useState<'up' | 'down' | 'neutral'>('neutral');
+  
+  // Sample data for charts (in real app, this would come from API)
+  const [goldPriceData, setGoldPriceData] = useState<any[]>([]);
+  const [portfolioData, setPortfolioData] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (currentPrice && currentPrice.bid !== previousPrice) {
+      if (previousPrice !== null) {
+        setPriceDirection(currentPrice.bid > previousPrice ? 'up' : 'down');
+        // Reset direction after animation
+        setTimeout(() => setPriceDirection('neutral'), 2000);
+      }
+      setPreviousPrice(currentPrice.bid);
+      
+      // Add to price history for chart
+      setGoldPriceData(prev => {
+        const newData = [...prev, currentPrice];
+        return newData.slice(-20); // Keep last 20 data points
+      });
+    }
+  }, [currentPrice, previousPrice]);
 
   return (
     <ProtectedRoute>
@@ -82,6 +109,93 @@ export const Dashboard = () => {
               {/* Gold Holdings Card - Main Feature */}
               <div className="mb-8">
                 <GoldHoldingsCard />
+              </div>
+
+              {/* Real-time Price Display */}
+              <div className="mb-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Real-time Gold Price</h3>
+                    <div className="flex items-center space-x-2">
+                      {/* Connection Status Indicator */}
+                      <div className={`w-3 h-3 rounded-full ${
+                        connectionStatus === 'connected' ? 'bg-green-500' :
+                        connectionStatus === 'connecting' ? 'bg-yellow-500' :
+                        connectionStatus === 'error' ? 'bg-red-500' : 'bg-gray-500'
+                      }`}></div>
+                      <span className="text-sm text-gray-500">
+                        {connectionStatus === 'connected' ? 'Live' :
+                         connectionStatus === 'connecting' ? 'Connecting...' :
+                         connectionStatus === 'error' ? 'Connection Error' : 'Offline'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center py-8">
+                    {currentPrice ? (
+                      <div className={`transition-all duration-500 ${
+                        priceDirection === 'up' ? 'text-green-600 scale-105' :
+                        priceDirection === 'down' ? 'text-red-600 scale-105' : 'text-gray-900'
+                      }`}>
+                        <div className="flex items-center justify-center space-x-2 mb-2">
+                          <span className="text-4xl font-bold">
+                            ฿{currentPrice.bid.toLocaleString('th-TH', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </span>
+                          {priceDirection === 'up' && (
+                            <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {priceDirection === 'down' && (
+                            <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Bid: ฿{currentPrice.bid.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | 
+                          Ask: ฿{currentPrice.ask.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        {lastUpdate && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            Last update: {lastUpdate.toLocaleTimeString('th-TH')}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-gray-500">
+                        {connectionStatus === 'connecting' ? 'Connecting to price feed...' : 'No price data available'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Charts Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* Gold Price Chart */}
+                <div>
+                  <GoldPriceChart 
+                    data={goldPriceData}
+                    currentPrice={currentPrice?.bid}
+                  />
+                </div>
+                
+                {/* Portfolio Chart */}
+                <div>
+                  <PortfolioChart 
+                    data={[
+                      { date: '01/02', value: 50000, profit_loss: 0 },
+                      { date: '02/02', value: 51200, profit_loss: 2.4 },
+                      { date: '03/02', value: 49800, profit_loss: -0.4 },
+                      { date: '04/02', value: 52500, profit_loss: 5.0 },
+                      { date: '05/02', value: 51800, profit_loss: 3.6 },
+                    ]}
+                  />
+                </div>
               </div>
 
               {/* Trading Interface */}

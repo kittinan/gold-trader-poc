@@ -195,3 +195,58 @@ class Deposit(models.Model):
         self.user.save()
 
         return True
+
+
+class PriceAlert(models.Model):
+    """
+    Model for price alerts that notify users when gold price reaches target.
+    """
+    CONDITION_CHOICES = [
+        ('ABOVE', 'Above'),
+        ('BELOW', 'Below'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='price_alerts')
+    target_price = models.DecimalField(max_digits=10, decimal_places=2)  # Target price in THB/gram
+    condition = models.CharField(max_length=5, choices=CONDITION_CHOICES)
+    is_active = models.BooleanField(default=True)
+    is_triggered = models.BooleanField(default=False)
+    triggered_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'price_alerts'
+        verbose_name = 'Price Alert'
+        verbose_name_plural = 'Price Alerts'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.condition} {self.target_price} THB/g"
+
+    def check_alert(self, current_price):
+        """
+        Check if alert should be triggered based on current price.
+        Returns True if alert should trigger, False otherwise.
+        """
+        if not self.is_active or self.is_triggered:
+            return False
+
+        if self.condition == 'ABOVE' and current_price >= self.target_price:
+            return True
+        elif self.condition == 'BELOW' and current_price <= self.target_price:
+            return True
+
+        return False
+
+    def trigger(self):
+        """
+        Mark the alert as triggered.
+        """
+        if not self.is_triggered:
+            self.is_triggered = True
+            self.is_active = False
+            self.triggered_at = timezone.now()
+            self.save()
+            return True
+        return False

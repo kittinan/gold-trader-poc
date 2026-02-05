@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from .models import User, Transaction, GoldHolding, PriceHistory, Deposit
+from .models import User, Transaction, GoldHolding, PriceHistory, Deposit, PriceAlert
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -143,3 +143,42 @@ class DepositUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Deposit
         fields = ('status',)
+
+
+class PriceAlertSerializer(serializers.ModelSerializer):
+    """
+    Serializer for PriceAlert model with user email.
+    """
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+
+    class Meta:
+        model = PriceAlert
+        fields = ('id', 'user', 'user_id', 'user_email', 'target_price', 'condition',
+                  'is_active', 'is_triggered', 'triggered_at', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'user_id', 'user_email', 'is_triggered',
+                           'triggered_at', 'created_at', 'updated_at')
+
+
+class PriceAlertCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating a new PriceAlert.
+    """
+    class Meta:
+        model = PriceAlert
+        fields = ('target_price', 'condition')
+
+    def validate_target_price(self, value):
+        """Ensure target price is positive."""
+        if value <= 0:
+            raise serializers.ValidationError("Target price must be greater than zero.")
+        return value
+
+
+class PriceAlertUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating an existing PriceAlert.
+    """
+    class Meta:
+        model = PriceAlert
+        fields = ('target_price', 'condition', 'is_active')

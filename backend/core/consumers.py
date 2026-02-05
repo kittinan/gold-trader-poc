@@ -42,4 +42,32 @@ class GoldPriceConsumer(AsyncWebsocketConsumer):
 
     async def gold_price_update(self, event):
         """Send gold price update to the client."""
-        await self.send(text_data=json.dumps(event))
+        await self.send(text_data=json.dumps(event.get('data', event)))
+
+
+class PriceAlertConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket consumer for price alert notifications.
+    """
+
+    async def connect(self):
+        """Join the user's alert group."""
+        # Get user_id from the URL (if authenticated)
+        # For now, we'll get it from the scope if authentication is set up
+        user_id = self.scope.get('user_id')
+        if user_id:
+            self.group_name = f'user_{user_id}_alerts'
+        else:
+            # Fallback to a test group
+            self.group_name = 'price_alerts_all'
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        """Leave the user's alert group."""
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def send_alert_notification(self, event):
+        """Send alert notification to the client."""
+        await self.send(text_data=json.dumps(event.get('message', event)))
