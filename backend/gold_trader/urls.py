@@ -15,10 +15,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+
+def health_check(request):
+    """Health check endpoint for Docker health checks and load balancers."""
+    return JsonResponse({'status': 'healthy', 'service': 'gold-trader-backend'})
+
+
 urlpatterns = [
+    path('health/', health_check, name='health'),
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
 ]
