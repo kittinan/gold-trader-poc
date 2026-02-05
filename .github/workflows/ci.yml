@@ -26,6 +26,9 @@ jobs:
 
       - name: Run tests
         working-directory: ./backend
+        env:
+          DJANGO_SETTINGS_MODULE: gold_trader.settings.dev
+          SECRET_KEY: django-insecure-ci-test-key
         run: |
           pytest -v --cov=. --cov-report=xml --create-db
 
