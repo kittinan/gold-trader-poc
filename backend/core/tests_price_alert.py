@@ -2,10 +2,10 @@
 Unit tests for PriceAlert model and views.
 """
 from decimal import Decimal
-from django.test import TestCase, APIClient
+from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from unittest.mock import patch, MagicMock
 
@@ -180,6 +180,10 @@ class PriceAlertViewTest(APITestCase):
 
     def setUp(self):
         """Set up test data."""
+        # Clear all alerts first
+        PriceAlert.objects.all().delete()
+        User.objects.filter(username__in=['testuser', 'otheruser']).delete()
+        
         self.client = APIClient()
         self.user = User.objects.create_user(
             username='testuser',
@@ -214,9 +218,15 @@ class PriceAlertViewTest(APITestCase):
             condition='ABOVE'
         )
 
-        response = self.client.get('/alerts/')
+        response = self.client.get('/api/alerts/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)  # Only user's alerts
+        
+        # Handle paginated response
+        if 'results' in response.data:
+            data = response.data['results']
+        else:
+            data = response.data
+        self.assertEqual(len(data), 2)  # Only user's alerts
 
     def test_create_price_alert(self):
         """Test creating a new price alert."""
@@ -224,7 +234,7 @@ class PriceAlertViewTest(APITestCase):
             'target_price': '2800.00',
             'condition': 'ABOVE'
         }
-        response = self.client.post('/alerts/', data)
+        response = self.client.post('/api/alerts/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(PriceAlert.objects.count(), 1)
 
@@ -234,7 +244,7 @@ class PriceAlertViewTest(APITestCase):
             'target_price': '-100.00',
             'condition': 'ABOVE'
         }
-        response = self.client.post('/alerts/', data)
+        response = self.client.post('/api/alerts/', data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_retrieve_price_alert(self):
@@ -244,7 +254,7 @@ class PriceAlertViewTest(APITestCase):
             target_price=Decimal('2800.00'),
             condition='ABOVE'
         )
-        response = self.client.get(f'/alerts/{alert.id}/')
+        response = self.client.get(f'/api/alerts/{alert.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], alert.id)
 
@@ -260,7 +270,7 @@ class PriceAlertViewTest(APITestCase):
             'condition': 'BELOW',
             'is_active': False
         }
-        response = self.client.patch(f'/alerts/{alert.id}/', data)
+        response = self.client.patch(f'/api/alerts/{alert.id}/', data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         alert.refresh_from_db()
@@ -275,7 +285,7 @@ class PriceAlertViewTest(APITestCase):
             target_price=Decimal('2800.00'),
             condition='ABOVE'
         )
-        response = self.client.delete(f'/alerts/{alert.id}/')
+        response = self.client.delete(f'/api/alerts/{alert.id}/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(PriceAlert.objects.count(), 0)
 
@@ -287,7 +297,7 @@ class PriceAlertViewTest(APITestCase):
             condition='ABOVE',
             is_active=False
         )
-        response = self.client.post(f'/alerts/{alert.id}/toggle/')
+        response = self.client.post(f'/api/alerts/{alert.id}/toggle/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data['is_active'])
 
@@ -302,7 +312,7 @@ class PriceAlertViewTest(APITestCase):
             condition='ABOVE',
             is_active=True
         )
-        response = self.client.post(f'/alerts/{alert.id}/toggle/')
+        response = self.client.post(f'/api/alerts/{alert.id}/toggle/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data['is_active'])
 
@@ -312,7 +322,7 @@ class PriceAlertViewTest(APITestCase):
     def test_unauthorized_access(self):
         """Test that unauthenticated users cannot access alerts."""
         self.client.force_authenticate(user=None)
-        response = self.client.get('/alerts/')
+        response = self.client.get('/api/alerts/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -321,6 +331,10 @@ class PriceAlertServiceTest(TestCase):
 
     def setUp(self):
         """Set up test data."""
+        # Clear all alerts first
+        PriceAlert.objects.all().delete()
+        User.objects.filter(username__in=['testuser', 'testuser2']).delete()
+        
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -373,17 +387,17 @@ class PriceAlertServiceTest(TestCase):
             condition='BELOW'
         )
 
-        # Check with price that should trigger alert2 but not alert1
-        triggered = PriceAlertService.check_and_trigger_alerts(Decimal('2650.00'))
+        # Check with price 2750: triggers alert1 (< 2800) but not alert2 (not < 2700)
+        triggered = PriceAlertService.check_and_trigger_alerts(Decimal('2750.00'))
 
         self.assertEqual(len(triggered), 1)
-        self.assertEqual(triggered[0].id, alert2.id)
+        self.assertEqual(triggered[0].id, alert1.id)
 
         alert1.refresh_from_db()
-        self.assertFalse(alert1.is_triggered)
+        self.assertTrue(alert1.is_triggered)
 
         alert2.refresh_from_db()
-        self.assertTrue(alert2.is_triggered)
+        self.assertFalse(alert2.is_triggered)
 
     @patch('core.services.PriceAlertService._send_alert_notification')
     def test_check_and_trigger_multiple_alerts(self, mock_send):

@@ -1,3 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+new_venv/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+staticfiles/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/
+.tox/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # Playwright
 node_modules/
@@ -6,3 +40,12 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Frontend build & coverage
+frontend/coverage/
+frontend/dist/
+frontend/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
