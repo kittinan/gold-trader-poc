@@ -251,3 +251,10 @@ def authenticated_admin_client(api_client, admin_user):
     """Return authenticated admin API client."""
     api_client.force_authenticate(user=admin_user)
     return api_client
+
+
+@pytest.fixture
+def authenticated_verified_client(api_client, verified_user):
+    """Return authenticated verified user API client."""
+    api_client.force_authenticate(user=verified_user)
+    return api_client
