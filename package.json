@@ -1,0 +1,22 @@
+{
+  "name": "gold-trader-poc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kittinan/gold-trader-poc.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kittinan/gold-trader-poc/issues"
+  },
+  "homepage": "https://github.com/kittinan/gold-trader-poc#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.1",
+    "@types/node": "^25.2.0"
+  }
+}
