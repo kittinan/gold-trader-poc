@@ -5,6 +5,7 @@ import { Profile } from './pages/Profile';
 import { Dashboard } from './pages/Dashboard';
 import Deposit from './pages/Deposit';
 import Trading from './pages/Trading';
+import Alerts from './pages/Alerts';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/deposit" element={<Deposit />} />
         <Route path="/trade" element={<Trading />} />
+        <Route path="/alerts" element={<Alerts />} />
         <Route path="/profile" element={<Profile />} />
         
         {/* Redirect root to dashboard */}
