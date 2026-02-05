@@ -37,6 +37,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         postgresql-client \
         libpq5 \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user

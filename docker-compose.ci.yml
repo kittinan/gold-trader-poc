@@ -37,6 +37,12 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: gold-trader-backend-ci
+    command: >
+      sh -c "
+        python manage.py migrate --noinput &&
+        python manage.py collectstatic --noinput &&
+        gunicorn gold_trader.asgi:application -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 --workers 2
+      "
     environment:
       - DEBUG=False
       - SECRET_KEY=${SECRET_KEY:-django-insecure-ci-secret-key}
@@ -64,7 +70,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 10
-      start_period: 40s
+      start_period: 60s
 
   # React Frontend (CI)
   frontend:
